@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Peta Zona Waktu Indonesia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
+    .info {
+      background: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // Inisialisasi peta
+    const map = L.map('map').setView([-2.5, 118], 5);
+
+    // Tambahkan tile dasar (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Load file GeoJSON (pastikan file ini berada di direktori yang sama)
+    fetch('indonesia-prov-with-timezone.geojson.json')
+      .then(res => res.json())
+      .then(data => {
+        // Style per zona waktu
+        function getColor(zona) {
+          switch (zona) {
+            case 'WIB': return '#4CAF50';
+            case 'WITA': return '#2196F3';
+            case 'WIT': return '#9C27B0';
+            default: return '#CCCCCC';
+          }
+        }
+
+        function style(feature) {
+          return {
+            fillColor: getColor(feature.properties.zona_waktu),
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: 0.7
+          };
+        }
+
+        // Event untuk menampilkan info klik
+        function onEachFeature(feature, layer) {
+          layer.on('click', function(e) {
+            const latlng = e.latlng;
+            const prop = feature.properties;
+            const content = `
+              <div class="info">
+                <b>${prop.Propinsi}</b><br>
+                Zona waktu: <b>${prop.zona_waktu || '-'}</b><br>
+                Lat: ${latlng.lat.toFixed(4)}<br>
+                Lng: ${latlng.lng.toFixed(4)}
+              </div>
+            `;
+            L.popup()
+              .setLatLng(latlng)
+              .setContent(content)
+              .openOn(map);
+          });
+        }
+
+        // Tambahkan layer GeoJSON
+        L.geoJSON(data, {
+          style: style,
+          onEachFeature: onEachFeature
+        }).addTo(map);
+      })
+      .catch(err => console.error('Gagal memuat GeoJSON:', err));
+  </script>
+</body>
+</html>
